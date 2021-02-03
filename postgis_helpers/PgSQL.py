@@ -227,6 +227,15 @@ class PostgreSQL:
 
         return magic
 
+    def add_schema(self, schema: str) -> None:
+        """
+        Add a schema if it does not yet exist.
+
+        :param schema: any valid name for a SQL schema
+        :type query: str
+        """
+        self.execute(f"CREATE SCHEMA IF NOT EXISTS {schema}")
+
     # QUERY the database
     # ------------------
 
@@ -809,7 +818,9 @@ class PostgreSQL:
         for s in [".", "-", "(", ")", "+"]:
             dataframe.columns = dataframe.columns.str.replace(s, "")
 
-        # Write to database
+        # Write to database after making sure schema exists
+        self.add_schema(schema)
+
         engine = sqlalchemy.create_engine(self.uri())
         dataframe.to_sql(table_name, engine, if_exists=if_exists, schema=schema)
         engine.dispose()
@@ -889,6 +900,8 @@ class PostgreSQL:
         gdf.drop("geometry", 1, inplace=True)
 
         # Write geodataframe to SQL database
+        self.add_schema(schema)
+
         engine = sqlalchemy.create_engine(self.uri())
         gdf.to_sql(
             table_name,
@@ -1027,6 +1040,8 @@ class PostgreSQL:
             {query}
         """
 
+        self.add_schema(schema)
+
         self.execute(sql_make_table_from_query)
 
         self.table_add_uid_column(new_table_name, schema=schema, uid_col=uid_col)
@@ -1090,6 +1105,8 @@ class PostgreSQL:
                     {desired_epsg}
             );
         """
+
+        self.add_schema(schema)
 
         self.execute(sql_create_hex_grid)
 
